@@ -17,6 +17,9 @@ using Microsoft.Azure.Commands.Common.Authentication.Abstractions;
 using Microsoft.Azure.Commands.Common.Authentication.Models;
 using Microsoft.Azure.Management.HDInsight;
 using Microsoft.Azure.Management.HDInsight.Models;
+using Microsoft.Azure.Management.Storage.Version2017_10_01;
+using Microsoft.Azure.Management.Storage.Version2017_10_01.Models;
+using System;
 using System.Collections.Generic;
 
 namespace Microsoft.Azure.Commands.HDInsight.Models
@@ -26,6 +29,7 @@ namespace Microsoft.Azure.Commands.HDInsight.Models
         public AzureHdInsightManagementClient(IAzureContext context)
         {
             HdInsightManagementClient = AzureSession.Instance.ClientFactory.CreateClient<HDInsightManagementClient>(context, AzureEnvironment.Endpoint.ResourceManager);
+            StorageManagementClient = AzureSession.Instance.ClientFactory.CreateArmClient<StorageManagementClient>(context, AzureEnvironment.Endpoint.ResourceManager>);
         }
 
         /// <summary>
@@ -34,6 +38,8 @@ namespace Microsoft.Azure.Commands.HDInsight.Models
         public AzureHdInsightManagementClient() { }
 
         private IHDInsightManagementClient HdInsightManagementClient { get; set; }
+
+        private IStorageManagementClient StorageManagementClient { get; set; }
 
         public virtual ClusterGetResponse CreateNewCluster(string resourceGroupName, string clusterName, ClusterCreateParameters parameters)
         {
@@ -121,14 +127,26 @@ namespace Microsoft.Azure.Commands.HDInsight.Models
             return HdInsightManagementClient.Clusters.Delete(resourceGroupName, clusterName);
         }
 
+        [Obsolete("This method has been deprecated and will stop working.")]
         public virtual OperationResource ConfigureHttp(string resourceGroupName, string clusterName, HttpSettingsParameters httpSettings)
         {
             return HdInsightManagementClient.Clusters.ConfigureHttpSettings(resourceGroupName, clusterName, httpSettings);
         }
 
+        public virtual OperationResource UpdateGatewayCredential(string resourceGroupName, string clusterName, HttpSettingsParameters httpSettings)
+        {
+            return HdInsightManagementClient.Clusters.UpdateGatewaySettings(resourceGroupName, clusterName, httpSettings);
+        }
+
+        [Obsolete("This method has been deprecated and will stop working.")]
         public virtual HttpConnectivitySettings GetConnectivitySettings(string resourceGroupName, string clusterName)
         {
             return HdInsightManagementClient.Clusters.GetConnectivitySettings(resourceGroupName, clusterName);
+        }
+
+        public virtual HttpConnectivitySettings GetGatewaySettings(string resourceGroupName, string clusterName)
+        {
+            return HdInsightManagementClient.Clusters.GetGatewaySettings(resourceGroupName, clusterName);
         }
 
         public virtual OperationResource ConfigureRdp(string resourceGroupName, string clusterName, RDPSettingsParameters rdpSettings)
@@ -139,6 +157,11 @@ namespace Microsoft.Azure.Commands.HDInsight.Models
         public virtual CapabilitiesResponse GetCapabilities(string location)
         {
             return HdInsightManagementClient.Clusters.GetCapabilities(location);
+        }
+
+        public virtual IList<StorageAccountKey> GetStorageAccountKeys(string resourceGroupName, string accountName)
+        {
+            return StorageManagementClient.StorageAccounts.ListKeys(resourceGroupName, accountName).Keys;
         }
 
         public virtual IDictionary<string, string> GetClusterConfigurations(string resourceGroupName, string clusterName, string configurationName)

@@ -16,6 +16,7 @@ using Microsoft.Azure.Management.HDInsight.Models;
 using Microsoft.WindowsAzure.Commands.Common;
 using Microsoft.WindowsAzure.Commands.ScenarioTest;
 using Moq;
+using System;
 using System.Management.Automation;
 using System.Net;
 using Xunit;
@@ -25,7 +26,10 @@ namespace Microsoft.Azure.Commands.HDInsight.Test
     public class HttpTests : HDInsightTestBase
     {
         private GrantAzureHDInsightHttpServicesAccessCommand grantcmdlet;
+
         private RevokeAzureHDInsightHttpServicesAccessCommand revokecmdlet;
+
+        private SetAzureHDInsightGatewayCredentialCommand updatecmdlet;
 
         private readonly PSCredential _httpCred;
 
@@ -43,6 +47,7 @@ namespace Microsoft.Azure.Commands.HDInsight.Test
                 ResourceGroupName = ResourceGroupName,
                 HttpCredential = _httpCred
             };
+
             revokecmdlet = new RevokeAzureHDInsightHttpServicesAccessCommand
             {
                 CommandRuntime = commandRuntimeMock.Object,
@@ -50,8 +55,18 @@ namespace Microsoft.Azure.Commands.HDInsight.Test
                 ClusterName = ClusterName,
                 ResourceGroupName = ResourceGroupName
             };
+
+            updatecmdlet = new SetAzureHDInsightGatewayCredentialCommand
+            {
+                CommandRuntime = commandRuntimeMock.Object,
+                HDInsightManagementClient = hdinsightManagementMock.Object,
+                ClusterName = ClusterName,
+                ResourceGroupName = ResourceGroupName,
+                HttpCredential = _httpCred
+            };
         }
 
+        [Obsolete]
         [Fact]
         [Trait(Category.AcceptanceType, Category.CheckIn)]
         public void CanGrantHttpAccess()
@@ -89,6 +104,7 @@ namespace Microsoft.Azure.Commands.HDInsight.Test
             commandRuntimeMock.Verify(f => f.WriteObject(connectivitysettings), Times.Once);
         }
 
+        [Obsolete]
         [Fact]
         [Trait(Category.AcceptanceType, Category.CheckIn)]
         public void CanRevokeHttpAccess()
@@ -123,6 +139,77 @@ namespace Microsoft.Azure.Commands.HDInsight.Test
 
             commandRuntimeMock.VerifyAll();
             commandRuntimeMock.Verify(f => f.WriteObject(connectivitysettings), Times.Once);
+        }
+
+        [Fact]
+        [Trait(Category.AcceptanceType, Category.CheckIn)]
+        public void CanSetGatewayCredential()
+        {
+            hdinsightManagementMock.Setup(
+                c =>
+                    c.UpdateGatewayCredential(ResourceGroupName, ClusterName,
+                        It.Is<HttpSettingsParameters>(
+                            param =>
+                                param.HttpUserEnabled && param.HttpUsername == _httpCred.UserName &&
+                                param.HttpPassword == _httpCred.Password.ConvertToString())))
+                .Returns(new OperationResource
+                {
+                    ErrorInfo = null,
+                    StatusCode = HttpStatusCode.OK,
+                    State = AsyncOperationState.Succeeded
+                })
+                .Verifiable();
+
+            var gatewayCredential = new HttpConnectivitySettings
+            {
+                HttpPassword = _httpCred.Password.ConvertToString(),
+                HttpUserEnabled = true,
+                HttpUsername = _httpCred.UserName,
+                StatusCode = HttpStatusCode.OK
+            };
+
+            hdinsightManagementMock.Setup(c => c.GetGatewaySettings(ResourceGroupName, ClusterName))
+                .Returns(gatewayCredential)
+                .Verifiable();
+
+            updatecmdlet.ExecuteCmdlet();
+
+            commandRuntimeMock.VerifyAll();
+            commandRuntimeMock.Verify(f => f.WriteObject(gatewayCredential), Times.Once);
+        }
+
+        [Fact]
+        [Trait(Category.AcceptanceType, Category.CheckIn)]
+        public void CanWriteErrorWhenSetGatewayCredentialFailed()
+        {
+            var result = new OperationResource
+            {
+                ErrorInfo = new ErrorInfo { Code = "Ambari Failed Code", Message = "GetAmbariUserFailed" },
+                StatusCode = HttpStatusCode.OK,
+                State = AsyncOperationState.Failed
+            };
+
+            hdinsightManagementMock.Setup(
+                c =>
+                    c.UpdateGatewayCredential(ResourceGroupName, ClusterName,
+                        It.Is<HttpSettingsParameters>(
+                            param =>
+                                param.HttpUserEnabled && param.HttpUsername == _httpCred.UserName &&
+                                param.HttpPassword == _httpCred.Password.ConvertToString())))
+                .Returns(result)
+                .Verifiable();
+
+            updatecmdlet.ExecuteCmdlet();
+
+            commandRuntimeMock.VerifyAll();
+            commandRuntimeMock.Verify(
+                f =>
+                    f.WriteError(It.Is<ErrorRecord>(
+                        record =>
+                            record.Exception.Message == $"{result.ErrorInfo.Code}: {result.ErrorInfo.Message}" &&
+                            string.IsNullOrEmpty(record.FullyQualifiedErrorId) &&
+                            record.CategoryInfo.Category == ErrorCategory.InvalidArgument)),
+                Times.Once);
         }
     }
 }

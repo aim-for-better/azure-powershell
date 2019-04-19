@@ -140,11 +140,15 @@ namespace Microsoft.Azure.Commands.HDInsight
                 var DefaultStorageAccount = GetDefaultStorageAccount(resourceGroupName, clusterName);
 
                 var wasbAccount = DefaultStorageAccount as AzureHDInsightWASBDefaultStorageAccount;
+
                 if (wasbAccount != null)
                 {
                     DefaultContainer = wasbAccount.StorageContainerName;
                     DefaultStorageAccountName = wasbAccount.StorageAccountName;
-                    DefaultStorageAccountKey = wasbAccount.StorageAccountKey;
+
+                    var storageAccountKeys = HDInsightManagementClient.GetStorageAccountKeys(resourceGroupName, DefaultStorageAccountName);
+
+                    DefaultStorageAccountKey = storageAccountKeys?.Count > 0 ? storageAccountKeys[0].Value : null;
                     StorageAccountSuffix = DefaultContext.Environment.StorageEndpointSuffix;
                 }
                 else

@@ -15,10 +15,13 @@
 using Microsoft.Azure.Commands.HDInsight.Commands;
 using Microsoft.Azure.Commands.ResourceManager.Common.ArgumentCompleters;
 using Microsoft.Azure.Management.HDInsight.Models;
+using Microsoft.WindowsAzure.Commands.Common.CustomAttributes;
+using System;
 using System.Management.Automation;
 
 namespace Microsoft.Azure.Commands.HDInsight
 {
+    [CmdletDeprecation(ReplacementCmdletName = "Set-AzHDInsightGatewayCredential")]
     [Cmdlet("Revoke", ResourceManager.Common.AzureRMConstants.AzureRMPrefix + "HDInsightHttpServicesAccess"),OutputType(typeof(HttpConnectivitySettings))]
     public class RevokeAzureHDInsightHttpServicesAccessCommand : HDInsightCmdletBase
     {
@@ -34,7 +37,6 @@ namespace Microsoft.Azure.Commands.HDInsight
         [ResourceGroupCompleter]
         public string ResourceGroupName { get; set; }
 
-
         #endregion
 
         public override void ExecuteCmdlet()
@@ -49,8 +51,10 @@ namespace Microsoft.Azure.Commands.HDInsight
                 ResourceGroupName = GetResourceGroupByAccountName(ClusterName);
             }
 
+#pragma warning disable CS0618 // Type or member is obsolete
             HDInsightManagementClient.ConfigureHttp(ResourceGroupName, ClusterName, httpParams);
             WriteObject(HDInsightManagementClient.GetConnectivitySettings(ResourceGroupName, ClusterName));
+#pragma warning restore CS0618 // Type or member is obsolete
         }
     }
 }

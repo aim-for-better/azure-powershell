@@ -16,16 +16,17 @@ using Microsoft.Azure.Commands.HDInsight.Commands;
 using Microsoft.Azure.Commands.ResourceManager.Common.ArgumentCompleters;
 using Microsoft.Azure.Management.HDInsight.Models;
 using Microsoft.WindowsAzure.Commands.Common;
-using Microsoft.WindowsAzure.Commands.Common.CustomAttributes;
 using System;
 using System.Management.Automation;
 
 namespace Microsoft.Azure.Commands.HDInsight
 {
-    [CmdletDeprecation(ReplacementCmdletName = "Set-AzHDInsightGatewayCredential")]
-    [Cmdlet("Grant", ResourceManager.Common.AzureRMConstants.AzureRMPrefix + "HDInsightHttpServicesAccess"),OutputType(typeof(HttpConnectivitySettings))]
-    public class GrantAzureHDInsightHttpServicesAccessCommand : HDInsightCmdletBase
+    [Cmdlet(VerbsCommon.Set, ResourceManager.Common.AzureRMConstants.AzureRMPrefix + "HDInsightGatewayCredential", DefaultParameterSetName = SetGatewayCredentialParameterSetName), OutputType(typeof(HttpConnectivitySettings))]
+    public class SetAzureHDInsightGatewayCredentialCommand : HDInsightCmdletBase
     {
+        private const string SetGatewayCredentialParameterSetName = "SetGatewayCredential";
+        private const string RemoveGatewayCredentialParameterSetName = "RemoveGatewayCredential";
+
         #region Input Parameter Definitions
 
         [Parameter(
@@ -34,8 +35,10 @@ namespace Microsoft.Azure.Commands.HDInsight
             HelpMessage = "Gets or sets the name of the cluster.")]
         public string ClusterName { get; set; }
 
-        [Parameter(Position = 1,
+        [Parameter(
+            Position = 1,
             Mandatory = true,
+            ParameterSetName = SetGatewayCredentialParameterSetName,
             HelpMessage = "Gets or sets the login for the cluster's user.")]
         public PSCredential HttpCredential { get; set; }
 
@@ -43,25 +46,46 @@ namespace Microsoft.Azure.Commands.HDInsight
         [ResourceGroupCompleter]
         public string ResourceGroupName { get; set; }
 
+        [Parameter(
+            Position = 1,
+            Mandatory = true,
+            ParameterSetName = RemoveGatewayCredentialParameterSetName,
+            HelpMessage = "Disables HTTP access to the cluster.")]
+        public SwitchParameter Disable { get; set; }
+
         #endregion
+
         public override void ExecuteCmdlet()
         {
             var httpParams = new HttpSettingsParameters
             {
-                HttpUserEnabled = true,
-                HttpUsername = HttpCredential.UserName,
-                HttpPassword = HttpCredential.Password.ConvertToString()
+                HttpUserEnabled = true
             };
+
+            if (Disable.IsPresent)
+            {
+                httpParams.HttpUserEnabled = false;
+            }
+            else
+            {
+                httpParams.HttpUsername = HttpCredential.UserName;
+                httpParams.HttpPassword = HttpCredential.Password.ConvertToString();
+            }
 
             if (ResourceGroupName == null)
             {
                 ResourceGroupName = GetResourceGroupByAccountName(ClusterName);
             }
 
-#pragma warning disable CS0618 // Type or member is obsolete
-            HDInsightManagementClient.ConfigureHttp(ResourceGroupName, ClusterName, httpParams);
-            WriteObject(HDInsightManagementClient.GetConnectivitySettings(ResourceGroupName, ClusterName));
-#pragma warning restore CS0618 // Type or member is obsolete
+            var result = HDInsightManagementClient.UpdateGatewayCredential(ResourceGroupName, ClusterName, httpParams);
+            if (result.State == AsyncOperationState.Failed)
+            {
+                WriteError(new ErrorRecord(new Exception($"{result.ErrorInfo?.Code}: {result.ErrorInfo?.Message}"), string.Empty, ErrorCategory.InvalidArgument, null));
+            }
+            else
+            {
+                WriteObject(HDInsightManagementClient.GetGatewaySettings(ResourceGroupName, ClusterName));
+            }
         }
     }
 }

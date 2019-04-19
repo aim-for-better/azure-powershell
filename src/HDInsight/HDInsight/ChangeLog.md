@@ -19,6 +19,10 @@
 -->
 ## Upcoming Release
 * Updated cmdlets with plural nouns to singular, and deprecated plural names.
+* Deprecated two cmdlets:
+    - Grant-AzHDInsightHttpServicesAccess
+    - Revoke-AzHDInsightHttpServicesAccess
+* Added a new cmdlet Set-AzHDInsightGatewayCredential to replace Grant-AzHDInsightHttpServicesAccess and Revoke-AzHDInsightHttpServicesAccess
 
 ## Version 1.0.0
 * General availability of `Az.HDInsight` module

@@ -1,4 +1,4 @@
-﻿---
+---
 external help file: Microsoft.Azure.PowerShell.Cmdlets.HDInsight.dll-Help.xml
 Module Name: Az.HDInsight
 ms.assetid: 670EAFC0-3F8D-4F3D-8B62-448F04378F8B
@@ -9,7 +9,7 @@ schema: 2.0.0
 # Revoke-AzHDInsightHttpServicesAccess
 
 ## SYNOPSIS
-Disables HTTP access to the cluster.
+This cmdlet has been deprecated and is no longer supported. Please use Set-AzHDInsightGatewayCredential instead. Disables HTTP access to the cluster.
 
 ## SYNTAX
 
@@ -79,7 +79,7 @@ Accept wildcard characters: False
 ```
 
 ### CommonParameters
-This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable, -InformationAction, -InformationVariable, -OutVariable, -OutBuffer, -PipelineVariable, -Verbose, -WarningAction, and -WarningVariable. For more information, see about_CommonParameters (http://go.microsoft.com/fwlink/?LinkID=113216).
+This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable, -InformationAction, -InformationVariable, -OutVariable, -OutBuffer, -PipelineVariable, -Verbose, -WarningAction, and -WarningVariable. For more information, see [about_CommonParameters](http://go.microsoft.com/fwlink/?LinkID=113216).
 
 ## INPUTS
 
@@ -94,5 +94,6 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 ## RELATED LINKS
 
 [Grant-AzHDInsightHttpServicesAccess](./Grant-AzHDInsightHttpServicesAccess.md)
+[Set-AzHDInsightGatewayCredential](./Set-AzHDInsightGatewayCredential.md)
 
 

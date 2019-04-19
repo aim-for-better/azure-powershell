@@ -82,11 +82,14 @@ namespace Microsoft.Azure.Commands.HDInsight.Models
                 {
                     string[] accountAndContainer = defaultFSUrl.Substring(WasbPrefix.Length).Split('@');
 
+                    string storageAccountKey;
+                    coreSiteConfiguration.TryGetValue(Constants.ClusterConfiguration.StorageAccountKeyPrefix + accountAndContainer[1], out storageAccountKey);
+
                     return new AzureHDInsightWASBDefaultStorageAccount
                     (
                         storageContainerName: accountAndContainer[0],
                         storageAccountName: accountAndContainer[1],
-                        storageAccountKey: coreSiteConfiguration[Constants.ClusterConfiguration.StorageAccountKeyPrefix + accountAndContainer[1]]
+                        storageAccountKey: storageAccountKey
                     );
                 }
                 else
